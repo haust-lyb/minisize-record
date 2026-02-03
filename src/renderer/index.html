@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>minisize record</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header" id="app-header">
+      <div class="header-drag-area"></div>
+      <div class="header-content">
+        <div class="header-left">
+          <h1>minisize record</h1>
+        </div>
+        <div class="header-tabs">
+          <button class="tab-btn active" data-view="home">📹 录制列表</button>
+          <button class="tab-btn" data-view="tasks">📉 压缩任务</button>
+          <button class="tab-btn" data-view="settings">⚙️ 设置</button>
+        </div>
+        <div class="header-actions" id="header-actions">
+          <button id="btn-add-recording" class="btn btn-primary btn-add">
+            <span class="btn-icon">+</span>
+            新增录制
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <main class="main-content">
+      <div id="view-setup" class="view view-setup">
+        <div class="setup-container">
+          <div class="setup-icon">🎥</div>
+          <h2>欢迎使用 minisize record</h2>
+          <p class="setup-desc">请先设置视频保存位置</p>
+          
+          <div class="setup-form">
+            <div class="form-group">
+              <label>视频保存文件夹</label>
+              <div class="input-group">
+                <input type="text" id="txt-setup-save-path" readonly placeholder="选择保存文件夹">
+                <button id="btn-setup-select-path" class="btn btn-primary">选择</button>
+              </div>
+            </div>
+            
+            <button id="btn-setup-save" class="btn btn-primary btn-full" disabled>开始使用</button>
+          </div>
+        </div>
+      </div>
+      
+      <div id="view-home" class="view view-home hidden">
+        <div class="view-header">
+          <h2>录制文件列表</h2>
+          <div class="header-actions">
+            <button id="btn-batch-export" class="btn btn-secondary" disabled>批量导出</button>
+          </div>
+        </div>
+        
+        <div id="recordings-list" class="recordings-list">
+          <div class="empty-state">
+            <div class="empty-icon">📹</div>
+            <p>暂无录制文件</p>
+            <p class="empty-hint">点击"新增录制"开始录制第一个视频</p>
+          </div>
+        </div>
+      </div>
+      
+      <div id="view-settings" class="view view-settings hidden">
+        <div class="settings-container">
+          <h2>系统设置</h2>
+          
+          <div class="settings-section">
+            <h3>💾 保存路径</h3>
+            <div class="form-group">
+              <div class="input-group">
+                <input type="text" id="txt-settings-save-path" readonly>
+                <button id="btn-settings-select-path" class="btn btn-primary">更改</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="settings-section">
+            <h3>ℹ️ 系统信息</h3>
+            <div class="form-group">
+              <label>用户数据目录</label>
+              <input type="text" id="txt-settings-user-data" readonly class="readonly-info">
+            </div>
+            <div class="form-group">
+              <label>FFmpeg 路径</label>
+              <input type="text" id="txt-settings-ffmpeg" readonly class="readonly-info">
+            </div>
+          </div>
+          
+          <button id="btn-settings-back" class="btn btn-primary">返回</button>
+        </div>
+      </div>
+      
+      <div id="view-recording" class="view view-recording hidden">
+        <div class="recording-header">
+          <button id="btn-back" class="btn btn-back">取消</button>
+          <div class="recording-status">
+            <span id="recording-status-indicator" class="status-indicator"></span>
+            <span id="recording-status-text">准备录制</span>
+          </div>
+        </div>
+        
+        <div class="recording-content">
+          <div class="video-section">
+            <div class="video-container">
+              <video id="video-preview" autoplay muted playsinline></video>
+              <div class="video-overlay">
+                <span id="txt-recording-time">00:00:00</span>
+              </div>
+              <div id="recording-indicator" class="recording-dot hidden">●</div>
+            </div>
+            
+            <div class="controls">
+              <select id="select-camera" class="camera-dropdown"></select>
+              <button id="btn-start" class="btn btn-primary">开始录制</button>
+              <button id="btn-pause" class="btn btn-warning" disabled>暂停</button>
+              <button id="btn-resume" class="btn btn-success" disabled>继续</button>
+              <button id="btn-save" class="btn btn-primary" style="display: none;">保存录像</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="view-player" class="view view-player hidden">
+        <div class="player-header">
+          <button id="btn-player-back" class="btn btn-back">返回</button>
+          <h2 id="player-title">视频播放</h2>
+        </div>
+        <div class="player-container">
+          <video id="video-player" controls playsinline></video>
+        </div>
+      </div>
+      
+      <div id="view-tasks" class="view view-tasks hidden">
+        <div class="view-header">
+          <h2>压缩任务列表</h2>
+          <div class="task-filters">
+            <button class="filter-btn active" data-filter="all">全部</button>
+            <button class="filter-btn" data-filter="processing">进行中</button>
+            <button class="filter-btn" data-filter="completed">已完成</button>
+          </div>
+        </div>
+        <div id="tasks-list" class="tasks-list">
+          <div class="empty-state">
+            <div class="empty-icon">📉</div>
+            <p>暂无压缩任务</p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <div id="toast-container" class="toast-container"></div>
+    
+    <div id="modal-export" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>视频导出配置</h3>
+          <button class="btn-close-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>导出模式</label>
+            <select id="export-mode">
+              <option value="separate" selected>逐个单独导出</option>
+              <option value="merge">合并为一个视频</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>分辨率</label>
+            <select id="export-resolution">
+              <option value="original">保持原样</option>
+              <option value="1920x1080">1080P</option>
+              <option value="1280x720" selected>720P</option>
+              <option value="854x480">480P</option>
+              <option value="640x360">360P</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>码率 (Bitrate)</label>
+            <select id="export-bitrate">
+              <option value="2000k">2000 Kbps</option>
+              <option value="1000k" selected>1000 Kbps</option>
+              <option value="500k">500 Kbps</option>
+              <option value="200k">200 Kbps</option>
+              <option value="100k">100 Kbps</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>帧率 (FPS)</label>
+            <select id="export-fps">
+              <option value="30" selected>30 FPS</option>
+              <option value="24">24 FPS</option>
+              <option value="15">15 FPS</option>
+              <option value="60">60 FPS</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>编码格式</label>
+            <select id="export-codec">
+              <option value="h264" selected>H.264 (兼容性好)</option>
+              <option value="h265">H.265 (压缩率高)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-export-cancel" class="btn btn-secondary">取消</button>
+          <button id="btn-export-confirm" class="btn btn-primary">继续</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  
+  <script src="js/renderer.js"></script>
+</body>
+</html>
