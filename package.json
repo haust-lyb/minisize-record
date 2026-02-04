@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "rebuild": "electron-rebuild"
+    "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
     "electron",
@@ -19,8 +19,7 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
-    "electron-rebuild": "^3.2.9"
+    "electron-builder": "^24.9.1"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
@@ -34,6 +33,7 @@
       "output": "dist"
     },
     "files": [
+      "package.json",
       "src/**/*"
     ],
     "asarUnpack": [
@@ -58,6 +58,7 @@
     },
     "mac": {
       "icon": "build/icon.icns",
+      "identity": null,
       "category": "public.app-category.productivity",
       "target": [
         {
