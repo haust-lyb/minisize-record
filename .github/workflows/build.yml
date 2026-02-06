@@ -43,8 +43,8 @@ jobs:
       - name: Build macOS app
         run: npm run build -- --mac --${{ matrix.arch }} --publish=never
         env:
-          # 禁用代码签名（免费账户无签名证书）
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_BUILDER_USE_HDIUL_SERIALIZE: true
 
       # 步骤6：上传构建产物
       - name: Upload macOS artifacts
