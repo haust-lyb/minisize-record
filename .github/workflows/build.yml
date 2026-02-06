@@ -11,6 +11,9 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read  # 需要写入权限才能创建 release
+
 # ============================================
 # 构建作业 - macOS
 # ============================================
@@ -103,6 +106,8 @@ jobs:
   release:
     needs: [build-macos, build-windows]  # 等待所有构建作业完成
     runs-on: ubuntu-latest               # 在 Ubuntu 上运行（免费）
+    permissions:
+      contents: write                    # 需要写入权限才能创建 release
 
     steps:
       # 步骤1：检出代码
@@ -139,6 +144,5 @@ jobs:
             artifacts/*.msi
           draft: false          # 直接发布（非草稿）
           prerelease: false     # 正式版（非预发布）
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Token
