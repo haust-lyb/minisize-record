@@ -1,13 +1,12 @@
 name: Build and Release
 
 # 触发条件：
-# - push 到 main/master/develop 分支
+# - push 到 main/master/develop 分支（仅构建，不发布）
 # - 提交 PR 到 main/master 分支
-# - 手动触发 workflow_dispatch
+# - 手动触发 workflow_dispatch（构建 + 自动读取版本发布）
 on:
   push:
     branches: [main, master, develop]
-    tags: ['v*']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -99,19 +98,26 @@ jobs:
 
 # ============================================
 # 发布作业
-# 只有打标签时才会触发（如 v1.0.0）
+# 通过 workflow_dispatch 手动触发，自动读取 package.json 版本发布
 # ============================================
   release:
     needs: [build-macos, build-windows]  # 等待所有构建作业完成
     runs-on: ubuntu-latest               # 在 Ubuntu 上运行（免费）
-    if: startsWith(github.ref, 'refs/tags/')  # 仅打标签时触发
 
     steps:
       # 步骤1：检出代码
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步骤2：下载所有构建产物
+      # 步骤2：读取 package.json 版本号
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      # 步骤3：下载所有构建产物
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -119,10 +125,12 @@ jobs:
           pattern: "*-build"
           merge-multiple: true
 
-      # 步骤3：创建 GitHub Release 并上传文件
+      # 步骤4：创建 GitHub Release 并上传文件
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
           # 上传所有平台的安装包
           files: |
             artifacts/*.dmg
@@ -131,5 +139,6 @@ jobs:
             artifacts/*.msi
           draft: false          # 直接发布（非草稿）
           prerelease: false     # 正式版（非预发布）
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Token
