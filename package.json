@@ -40,13 +40,6 @@
     "asarUnpack": [
       "**/node_modules/better-sqlite3/*"
     ],
-    "extraResources": [
-      {
-        "from": "resources/bin/${os}",
-        "to": "bin",
-        "filter": ["**/*"]
-      }
-    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -85,7 +78,8 @@
           "target": "nsis",
           "arch": [
             "x64",
-            "ia32"
+            "ia32",
+            "arm64"
           ]
         }
       ]

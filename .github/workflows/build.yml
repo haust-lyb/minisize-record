@@ -1,89 +1,149 @@
 name: Build and Release
 
+# 触发条件：
+# - push 到 main/master/develop 分支
+# - 提交 PR 到 main/master 分支
+# - 手动触发 workflow_dispatch
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
+  workflow_dispatch:
 
+# ============================================
+# 构建作业 - macOS
+# ============================================
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    
+  build-macos:
+    runs-on: macos-latest  # 在 macOS 虚拟机上运行
+
+    # 矩阵策略：同时构建 x64 和 arm64 版本
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            platform: mac
-            arch: arm64
-          - os: windows-latest
-            platform: win
-            arch: x64
+          - arch: x64      # Intel Mac
+          - arch: arm64    # Apple Silicon Mac
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # 步骤1：检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
+      # 步骤2：设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'              # 使用 Node 20 LTS
+          cache: 'pnpm'                    # 启用 pnpm 缓存加速
 
-    - name: Install dependencies
-      run: npm ci
+      # 步骤3：安装 pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
-    - name: Build Electron app (macOS ARM64)
-      if: matrix.platform == 'mac'
-      run: npm run build -- --mac --arm64 --publish=never
-      env:
-        CSC_IDENTITY_AUTO_DISCOVERY: false
+      # 步骤4：安装依赖（使用 frozen-lockfile 确保锁定版本）
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Build Electron app (Windows x64)
-      if: matrix.platform == 'win'
-      run: npm run build -- --win --x64 --publish=never
-      env:
-        CSC_IDENTITY_AUTO_DISCOVERY: false
+      # 步骤5：构建 macOS 应用
+      - name: Build macOS app
+        run: pnpm build -- --mac --${{ matrix.arch }} --publish=never
+        env:
+          # 禁用代码签名（免费账户无签名证书）
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
-    - name: Upload macOS artifacts
-      if: matrix.platform == 'mac'
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-arm64-build
-        path: dist/
-        retention-days: 30
+      # 步骤6：上传构建产物
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}-build  # 产物名称（区分架构）
+          path: dist/                           # 上传 dist 目录
+          retention-days: 7                     # 7天后自动删除（节省存储）
 
-    - name: Upload Windows artifacts
-      if: matrix.platform == 'win'
-      uses: actions/upload-artifact@v4
-      with:
-        name: windows-x64-build
-        path: dist/
-        retention-days: 30
+# ============================================
+# 构建作业 - Windows
+# ============================================
+  build-windows:
+    runs-on: windows-latest  # 在 Windows 虚拟机上运行
 
+    # 矩阵策略：同时构建三种架构
+    strategy:
+      matrix:
+        include:
+          - arch: x64      # 64位 Windows（主流）
+          - arch: ia32     # 32位 Windows（旧设备）
+          - arch: arm64    # Windows on ARM（Surface Pro X 等）
+
+    steps:
+      # 步骤1：检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 步骤2：设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      # 步骤3：安装 pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # 步骤4：安装依赖
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 步骤5：构建 Windows 应用
+      - name: Build Windows app
+        run: pnpm build -- --win --${{ matrix.arch }} --publish=never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      # 步骤6：上传构建产物
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}-build
+          path: dist/
+          retention-days: 7
+
+# ============================================
+# 发布作业
+# 只有打标签时才会触发（如 v1.0.0）
+# ============================================
   release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
+    needs: [build-macos, build-windows]  # 等待所有构建作业完成
+    runs-on: ubuntu-latest               # 在 Ubuntu 上运行（免费）
+    if: startsWith(github.ref, 'refs/tags/')  # 仅打标签时触发
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # 步骤1：检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
+      # 步骤2：下载所有构建产物
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true  # 合并到一个目录
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          artifacts/macos-arm64-build/*.dmg
-          artifacts/macos-arm64-build/*.zip
-          artifacts/windows-x64-build/*.exe
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 步骤3：创建 GitHub Release 并上传文件
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 上传所有平台的安装包
+          files: |
+            artifacts/*.dmg
+            artifacts/*.zip
+            artifacts/*.exe
+            artifacts/*.msi
+          draft: false          # 直接发布（非草稿）
+          prerelease: false     # 正式版（非预发布）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取 Token

@@ -11,22 +11,8 @@ const fs = require('fs');
 const Database = require('better-sqlite3');
 // 引入 FFmpeg 封装库，用于视频压缩和格式转换
 const ffmpeg = require('fluent-ffmpeg');
-
-// 存储 FFmpeg 可执行文件的路径
-let ffmpegPath;
-
-/**
- * 根据运行环境设置 FFmpeg 路径
- * - 打包环境：从 resources/bin/{platform}/ 目录读取
- * - 开发环境：从 node_modules/ffmpeg-static 读取
- */
-if (app.isPackaged) {
-  const platform = process.platform === 'win32' ? 'win' : 'mac';
-  const exeName = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
-  ffmpegPath = path.join(process.resourcesPath, 'bin', exeName);
-} else {
-  ffmpegPath = require('ffmpeg-static');
-}
+// 使用 ffmpeg-static 自动获取 FFmpeg 可执行文件路径
+const ffmpegPath = require('ffmpeg-static');
 
 // 配置 fluent-ffmpeg 使用指定路径的 FFmpeg
 ffmpeg.setFfmpegPath(ffmpegPath);
