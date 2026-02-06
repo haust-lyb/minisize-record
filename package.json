@@ -73,13 +73,15 @@
     },
     "win": {
       "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["arm64"]
         }
       ]
     }

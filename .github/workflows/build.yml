@@ -62,6 +62,9 @@ jobs:
 # ============================================
   build-windows:
     runs-on: windows-latest  # 在 Windows 虚拟机上运行
+    permissions:
+      id-token: write  # 需要 OIDC token 进行 Sigstore 签名
+      contents: read
 
     # 矩阵策略：同时构建三种架构
     strategy:
@@ -91,7 +94,24 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 步骤6：上传构建产物
+      # 步骤6：使用 Sigstore/Cosign 签名 Windows 安装包
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.3.0
+        with:
+          cosign-release: 'v2.2.2'
+
+      - name: Sign Windows artifacts with Sigstore
+        shell: pwsh
+        run: |
+          $exeFiles = Get-ChildItem -Path "dist\*.exe" -File
+          foreach ($file in $exeFiles) {
+            Write-Host "Signing $($file.FullName)..."
+            cosign sign-blob --yes "$($file.FullName)" --output-signature="$($file.FullName).sig"
+          }
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+
+      # 步骤7：上传构建产物（包含签名文件）
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -136,12 +156,15 @@ jobs:
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: Release v${{ steps.get_version.outputs.version }}
-          # 上传所有平台的安装包
+          # 上传所有平台的安装包和签名文件
           files: |
-            artifacts/*.dmg
-            artifacts/*.zip
-            artifacts/*.exe
-            artifacts/*.msi
+            artifacts/*-x64.dmg
+            artifacts/*-arm64.dmg
+            artifacts/*-x64-mac.zip
+            artifacts/*-arm64-mac.zip
+            artifacts/*-x64.exe
+            artifacts/*-arm64.exe
+            artifacts/*.sig
           draft: false          # 直接发布（非草稿）
           prerelease: false     # 正式版（非预发布）
         env:
