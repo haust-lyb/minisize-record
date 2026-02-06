@@ -41,10 +41,11 @@ body {
 }
 
 .header-drag-area {
-  height: 12px;
+  height: 40px;
   width: 100%;
   -webkit-app-region: drag;
   cursor: default;
+  background: var(--bg-tertiary);
 }
 
 .header-content {
