@@ -38,7 +38,8 @@
       "src/**/*"
     ],
     "asarUnpack": [
-      "**/node_modules/better-sqlite3/*"
+      "**/node_modules/better-sqlite3/*",
+      "**/node_modules/ffmpeg-static/*"
     ],
     "nsis": {
       "oneClick": false,

@@ -12,7 +12,19 @@ const Database = require('better-sqlite3');
 // 引入 FFmpeg 封装库，用于视频压缩和格式转换
 const ffmpeg = require('fluent-ffmpeg');
 // 使用 ffmpeg-static 自动获取 FFmpeg 可执行文件路径
-const ffmpegPath = require('ffmpeg-static');
+const ffmpegStatic = require('ffmpeg-static');
+
+// 处理生产环境中的路径问题
+let ffmpegPath;
+if (app.isPackaged) {
+  // 生产环境：ffmpeg 在 app.asar.unpacked 目录下
+  const appPath = app.getAppPath();
+  const unpackedPath = appPath.replace('app.asar', 'app.asar.unpacked');
+  ffmpegPath = ffmpegStatic.replace(appPath, unpackedPath);
+} else {
+  // 开发环境：直接使用 ffmpeg-static 返回的路径
+  ffmpegPath = ffmpegStatic;
+}
 
 // 配置 fluent-ffmpeg 使用指定路径的 FFmpeg
 ffmpeg.setFfmpegPath(ffmpegPath);
