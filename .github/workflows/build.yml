@@ -35,18 +35,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.17.0'
-          cache: 'pnpm'
+          cache: 'npm'
 
-      - name: Install pnpm
-        run: corepack enable pnpm && corepack prepare pnpm@10.28.0 --activate
-
-      # 步骤4：安装依赖（使用 frozen-lockfile 确保锁定版本）
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
-      # 步骤5：构建 macOS 应用
       - name: Build macOS app
-        run: pnpm build -- --mac --${{ matrix.arch }} --publish=never
+        run: npm run build -- --mac --${{ matrix.arch }} --publish=never
         env:
           # 禁用代码签名（免费账户无签名证书）
           CSC_IDENTITY_AUTO_DISCOVERY: false
