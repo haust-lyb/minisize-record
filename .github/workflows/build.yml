@@ -34,14 +34,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'              # 使用 Node 20 LTS
-          cache: 'pnpm'                    # 启用 pnpm 缓存加速
+          node-version: '22.17.0'
+          cache: 'pnpm'
 
-      # 步骤3：安装 pnpm
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.28.0
 
       # 步骤4：安装依赖（使用 frozen-lockfile 确保锁定版本）
       - name: Install dependencies
