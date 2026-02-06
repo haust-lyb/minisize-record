@@ -65,7 +65,6 @@ jobs:
       matrix:
         include:
           - arch: x64      # 64位 Windows（主流）
-          - arch: ia32     # 32位 Windows（旧设备）
           - arch: arm64    # Windows on ARM（Surface Pro X 等）
 
     steps:
